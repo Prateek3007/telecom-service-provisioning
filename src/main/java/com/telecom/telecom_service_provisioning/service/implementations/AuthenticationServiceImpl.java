@@ -27,13 +27,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Autowired
     public PasswordEncoder passwordEncoder;
 
+    @Autowired
+    public EmailMiddlewareService emailMiddlewareService;
+
     public void signup(User user) throws EmailAlreadyTakenException {
         if(userRepository.findByEmail(user.getEmail()).isPresent() || userRepository.findByUsername(user.getUsername()).isPresent()) {
             throw new EmailAlreadyTakenException("Email or username is already taken");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole(ROLE_USER); 
+        if(user.getRole() == null || user.getRole().isEmpty()) {
+            user.setRole(ROLE_USER); 
+        }
         userRepository.save(user);
+        emailMiddlewareService.sendRegistrationMail(user);
     }
 
     public UserDetails getCurrentLoggedInUserDetails() {
